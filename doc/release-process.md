@@ -1,6 +1,6 @@
 # Release process
 
-Habitat operator follows [Semantic Versioning](https://semver.org/).
+Biome operator follows [Semantic Versioning](https://semver.org/).
 
 ## Pull request
 

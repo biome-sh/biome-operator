@@ -17,7 +17,7 @@ package v1beta2
 import (
 	"fmt"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
 
 	"github.com/go-kit/kit/log/level"
 	appsv1 "k8s.io/api/apps/v1"
@@ -29,15 +29,15 @@ import (
 
 const persistentVolumeName = "persistent"
 
-func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.StatefulSet, error) {
+func (hc *BiomeController) newStatefulSet(h *habv1beta1.Biome) (*appsv1.StatefulSet, error) {
 	hs := h.Spec.V1beta2
 
 	// This value needs to be passed as a *int32, so we convert it, assign it to a
 	// variable and afterwards pass a pointer to it.
 	count := int32(hs.Count)
 
-	// Set the service arguments we send to Habitat.
-	var habArgs []string
+	// Set the service arguments we send to Biome.
+	var bioArgs []string
 	if hs.Service.Group != nil {
 		// When a service is started without explicitly naming the group,
 		// it's assigned to the default group.
@@ -54,12 +54,12 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 
 	// As we want to label our pods with the
 	// topology type we set standalone as the default one.
-	// We do not need to pass this to habitat, as if no topology
-	// is set, habitat by default sets standalone topology.
-	topology := habv1beta1.TopologyStandalone
+	// We do not need to pass this to biome, as if no topology
+	// is set, biome by default sets standalone topology.
+	topology := biov1beta1.TopologyStandalone
 
-	if hs.Service.Topology == habv1beta1.TopologyLeader {
-		topology = habv1beta1.TopologyLeader
+	if hs.Service.Topology == biov1beta1.TopologyLeader {
+		topology = biov1beta1.TopologyLeader
 	}
 
 	path := fmt.Sprintf("%s/%s", configMapDir, peerFilename)
@@ -82,13 +82,13 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.Name,
 			Labels: map[string]string{
-				habv1beta1.HabitatLabel:     "true",
-				habv1beta1.HabitatNameLabel: h.Name,
+				habv1beta1.BiomeLabel:     "true",
+				habv1beta1.BiomeNameLabel: h.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
-					APIVersion: habv1beta1.SchemeGroupVersion.String(),
-					Kind:       habv1beta1.HabitatKind,
+					APIVersion: biov1beta1.SchemeGroupVersion.String(),
+					Kind:       biov1beta1.BiomeKind,
 					Name:       h.Name,
 					UID:        h.UID,
 				},
@@ -97,7 +97,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 		Spec: appsv1.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					habv1beta1.HabitatNameLabel: h.Name,
+					habv1beta1.BiomeNameLabel: h.Name,
 				},
 			},
 			Replicas:            &count,
@@ -105,19 +105,19 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 			Template: apiv1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						habv1beta1.HabitatLabel:         "true",
-						habv1beta1.HabitatNameLabel:     h.Name,
+						habv1beta1.BiomeLabel:         "true",
+						habv1beta1.BiomeNameLabel:     h.Name,
 						habv1beta1.TopologyLabel:        topology.String(),
-						habv1beta1.HabitatTopologyLabel: topology.String(),
+						habv1beta1.BiomeTopologyLabel: topology.String(),
 					},
 				},
 				Spec: apiv1.PodSpec{
 					InitContainers: []apiv1.Container{},
 					Containers: []apiv1.Container{
 						{
-							Name:  "habitat-service",
+							Name:  "biome-service",
 							Image: hs.Image,
-							Args:  habArgs,
+							Args:  bioArgs,
 							VolumeMounts: []apiv1.VolumeMount{
 								{
 									Name:      "config",
@@ -187,9 +187,9 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 
 		secretVolumeMount := &apiv1.VolumeMount{
 			Name: userConfigFilename,
-			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
+			// The Biome supervisor creates a directory for each service under /hab/svc/<servicename>.
 			// We need to place the user.toml file in there in order for it to be detected.
-			MountPath: fmt.Sprintf("/hab/user/%s/config", hs.Service.Name),
+			MountPath: fmt.Sprintf("/bio/user/%s/config", hs.Service.Name),
 			ReadOnly:  false,
 		}
 
@@ -205,11 +205,11 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 			return nil, err
 		}
 
-		// In order to mount the volume such that hab can change the permissions, we need to
+		// In order to mount the volume such that bio can change the permissions, we need to
 		//   #1. Create A Secret Volume based on the supplied secret
 		//   #2. Create an EmptyDir Volume to hold /hab/svc/NAME/files
 		//   #3. Add an initContainer to copy the files from the Secret Volume to the EmptyDir Volume
-		//   #4. Mount only the EmptyDir Volume into the habitat service container
+		//   #4. Mount only the EmptyDir Volume into the biome service container
 
 		// #1
 		filesSecretVolume := &apiv1.Volume{
@@ -238,7 +238,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 
 		filesVolumeMount := &apiv1.VolumeMount{
 			Name: filesDirectoryName,
-			// The Habitat supervisor creates a directory for each service under /hab/svc/<servicename>.
+			// The Biome supervisor creates a directory for each service under /hab/svc/<servicename>.
 			// We need to place the files directory there.
 			MountPath: fmt.Sprintf("/hab/svc/%s/files", hs.Service.Name),
 			ReadOnly:  false,
@@ -281,8 +281,8 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 					Name:      persistentVolumeName,
 					Namespace: h.Namespace,
 					Labels: map[string]string{
-						habv1beta1.HabitatLabel:     "true",
-						habv1beta1.HabitatNameLabel: h.Name,
+						habv1beta1.BiomeLabel:     "true",
+						habv1beta1.BiomeNameLabel: h.Name,
 					},
 				},
 				Spec: apiv1.PersistentVolumeClaimSpec{
@@ -350,7 +350,7 @@ func (hc *HabitatController) newStatefulSet(h *habv1beta1.Habitat) (*appsv1.Stat
 	return base, nil
 }
 
-func (hc *HabitatController) cacheStatefulSets() {
+func (hc *BiomeController) cacheStatefulSets() {
 	hc.stsInformer = hc.config.KubeInformerFactory.Apps().V1().StatefulSets().Informer()
 
 	hc.stsInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -362,23 +362,23 @@ func (hc *HabitatController) cacheStatefulSets() {
 	hc.stsInformerSynced = hc.stsInformer.HasSynced
 }
 
-func (hc *HabitatController) handleStsAdd(obj interface{}) {
+func (hc *BiomeController) handleStsAdd(obj interface{}) {
 	sts, ok := obj.(*appsv1.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(sts)
+	h, err := hc.getBiomeFromLabeledResource(sts)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", sts.Name)
+		level.Error(hc.logger).Log("msg", "Could not find Biome for StatefulSet", "name", sts.Name)
 		return
 	}
 
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
+func (hc *BiomeController) handleStsUpdate(oldObj, newObj interface{}) {
 	oldSTS, ok := oldObj.(*appsv1.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", oldObj)
@@ -396,26 +396,26 @@ func (hc *HabitatController) handleStsUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(newSTS)
+	h, err := hc.getBiomeFromLabeledResource(newSTS)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", newSTS.Name)
+		level.Error(hc.logger).Log("msg", "Could not find Biome for StatefulSet", "name", newSTS.Name)
 		return
 	}
 
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handleStsDelete(obj interface{}) {
+func (hc *BiomeController) handleStsDelete(obj interface{}) {
 	sts, ok := obj.(*appsv1.StatefulSet)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert StatefulSet", "obj", obj)
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(sts)
+	h, err := hc.getBiomeFromLabeledResource(sts)
 	if err != nil {
-		// Could not find Habitat, it must have already been removed.
-		level.Debug(hc.logger).Log("msg", "Could not find Habitat for StatefulSet", "name", sts.Name)
+		// Could not find Biome, it must have already been removed.
+		level.Debug(hc.logger).Log("msg", "Could not find Biome for StatefulSet", "name", sts.Name)
 		return
 	}
 

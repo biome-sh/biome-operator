@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"time"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
-	habclient "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
+	habv1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
+	habclient "github.com/biome-sh/biome-operator/pkg/client/clientset/versioned/typed/biome/v1beta1"
 
 	"github.com/pkg/errors"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
@@ -46,7 +46,7 @@ type Framework struct {
 	Image               string
 	KubeClient          kubernetes.Interface
 	APIExtensionsClient apiextensionsclient.Interface
-	Client              *habclient.HabitatV1beta1Client
+	Client              *habclient.BiomeV1beta1Client
 	ExternalIP          string
 	Namespace           string
 }
@@ -69,9 +69,9 @@ func Setup(image, kubeconfig, externalIP, namespace string) (*Framework, error) 
 		return nil, errors.Wrap(err, "create kubernetes api extension clientset failed")
 	}
 
-	cl, err := habclient.NewForConfig(config)
+	cl, err := bioclient.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "create habitat client failed")
+		return nil, errors.Wrap(err, "create biome client failed")
 	}
 
 	f := &Framework{
@@ -95,10 +95,10 @@ func Setup(image, kubeconfig, externalIP, namespace string) (*Framework, error) 
 	return f, nil
 }
 
-// CreateHabitat creates a Habitat resource in cluster.
-func (f *Framework) CreateHabitat(habitat *habv1beta1.Habitat) error {
-	if _, err := f.Client.Habitats(f.Namespace).Create(habitat); err != nil {
-		return errors.Wrap(err, "create Habitat failed")
+// CreateBiome creates a Biome resource in cluster.
+func (f *Framework) CreateBiome(biome *habv1beta1.Biome) error {
+	if _, err := f.Client.Biomes(f.Namespace).Create(biome); err != nil {
+		return errors.Wrap(err, "create Biome failed")
 	}
 	return nil
 }
@@ -106,14 +106,14 @@ func (f *Framework) CreateHabitat(habitat *habv1beta1.Habitat) error {
 // WaitForResources waits until numPods are in the "Running" state.
 // We wait for pods, because those take the longest to create.
 // Waiting for anything else would be already testing.
-func (f *Framework) WaitForResources(labelName, habitatName string, numPods int) error {
+func (f *Framework) WaitForResources(labelName, biomeName string, numPods int) error {
 	return wait.Poll(2*time.Second, 5*time.Minute, func() (bool, error) {
 		fs := fields.SelectorFromSet(fields.Set{
 			"status.phase": string(apiv1.NodeRunning),
 		})
 
 		ls := labels.SelectorFromSet(labels.Set{
-			labelName: habitatName,
+			labelName: biomeName,
 		})
 
 		pods, err := f.KubeClient.CoreV1().Pods(f.Namespace).List(
@@ -134,9 +134,9 @@ func (f *Framework) WaitForResources(labelName, habitatName string, numPods int)
 	})
 }
 
-func (f *Framework) WaitForEndpoints(habitatName string) error {
+func (f *Framework) WaitForEndpoints(biomeName string) error {
 	return wait.Poll(time.Second, time.Minute*5, func() (bool, error) {
-		ep, err := f.KubeClient.CoreV1().Endpoints(f.Namespace).Get(habitatName, metav1.GetOptions{})
+		ep, err := f.KubeClient.CoreV1().Endpoints(f.Namespace).Get(biomeName, metav1.GetOptions{})
 		if err != nil {
 			return false, errors.Wrap(err, "get Endpoints failed")
 		}
@@ -171,9 +171,9 @@ func (f *Framework) GetLoadBalancerIP(serviceName string) (string, error) {
 	return loadBalancerIP, errors.Wrap(err, "wait poll failed")
 }
 
-// DeleteHabitat deletes a Habitat as a user would.
-func (f *Framework) DeleteHabitat(habitatName string, ns string) error {
-	return f.Client.Habitats(ns).Delete(habitatName, nil)
+// DeleteBiome deletes a Biome as a user would.
+func (f *Framework) DeleteBiome(biomeName string, ns string) error {
+	return f.Client.Biomes(ns).Delete(biomeName, nil)
 }
 
 // DeleteService delete a Kubernetes service provided.
@@ -282,16 +282,16 @@ func ConvertDeployment(pathToYaml string) (*appsv1beta1.Deployment, error) {
 	return &d, nil
 }
 
-// ConvertHabitat takes in a path to the YAML file containing the manifest.
-// It converts the file to the Habitat object.
-func ConvertHabitat(pathToYaml string) (*habv1beta1.Habitat, error) {
-	hab := habv1beta1.Habitat{}
+// ConvertBiome takes in a path to the YAML file containing the manifest.
+// It converts the file to the Biome object.
+func ConvertBiome(pathToYaml string) (*habv1beta1.Biome, error) {
+	bio := biov1beta1.Biome{}
 
-	if err := convertToK8sResource(pathToYaml, &hab); err != nil {
+	if err := convertToK8sResource(pathToYaml, &bio); err != nil {
 		return nil, errors.Wrap(err, "convert yml file to Kubernetes resource failed")
 	}
 
-	return &hab, nil
+	return &bio, nil
 }
 
 // ConvertService takes in a path to the YAML file containing the manifest.
@@ -355,7 +355,7 @@ func QueryService(url string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Habitat Service did not start correctly.")
+		return "", fmt.Errorf("Biome Service did not start correctly.")
 	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)

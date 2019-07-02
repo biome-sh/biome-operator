@@ -18,14 +18,14 @@ import (
 	"reflect"
 	"testing"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func TestHabitatKeyFromLabeledResource(t *testing.T) {
-	labelName := habv1beta1.HabitatNameLabel
+func TestBiomeKeyFromLabeledResource(t *testing.T) {
+	labelName := biov1beta1.BiomeNameLabel
 	tests := []struct {
 		name    string
 		arg     *metav1.ObjectMeta
@@ -61,16 +61,16 @@ func TestHabitatKeyFromLabeledResource(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := habitatKeyFromLabeledResource(tt.arg)
+			got, err := biomeKeyFromLabeledResource(tt.arg)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("habitatKeyFromLabeledResource() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("biomeKeyFromLabeledResource() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			} else if err != nil {
-				t.Logf("habitatKeyFromLabeledResource() failed as expected with error = %v", err)
+				t.Logf("biomeKeyFromLabeledResource() failed as expected with error = %v", err)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("habitatKeyFromLabeledResource() = %v, want %v", got, tt.want)
+				t.Errorf("biomeKeyFromLabeledResource() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -79,7 +79,7 @@ func TestHabitatKeyFromLabeledResource(t *testing.T) {
 func TestNewConfigMap(t *testing.T) {
 	type args struct {
 		ip string
-		h  *habv1beta1.Habitat
+		h  *habv1beta1.Biome
 	}
 	// only one code path so only one test
 	namespace := "myproject"
@@ -96,7 +96,7 @@ func TestNewConfigMap(t *testing.T) {
 			name: "working test case",
 			args: args{
 				ip: ip,
-				h: &habv1beta1.Habitat{
+				h: &biov1beta1.Biome{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
 						Namespace: namespace,
@@ -109,12 +109,12 @@ func TestNewConfigMap(t *testing.T) {
 					Name:      name,
 					Namespace: namespace,
 					Labels: map[string]string{
-						habv1beta1.HabitatLabel: "true",
+						habv1beta1.BiomeLabel: "true",
 					},
 					OwnerReferences: []metav1.OwnerReference{
 						metav1.OwnerReference{
-							APIVersion: habv1beta1.SchemeGroupVersion.String(),
-							Kind:       habv1beta1.HabitatKind,
+							APIVersion: biov1beta1.SchemeGroupVersion.String(),
+							Kind:       biov1beta1.BiomeKind,
 							Name:       name,
 							UID:        uid,
 						},

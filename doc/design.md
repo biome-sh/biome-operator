@@ -1,26 +1,26 @@
 # Design document
 
-The Habitat operator manages Habitat services on Kubernetes using the operator
+The Biome operator manages Biome services on Kubernetes using the operator
 pattern. During the initial run it registers the [Custom Resource Definition
-(CRD)][crd] for Habitat. The Habitat `CRD` is essentially the schema that
-describes the contents of the manifests for deploying individual Habitat objects
+(CRD)][crd] for Biome. The Biome `CRD` is essentially the schema that
+describes the contents of the manifests for deploying individual Biome objects
 using `StatefulSet`s.
 
 Once the operator is running, it performs the following actions:
 
-* Watches for new `Habitat` manifests and deploys corresponding sub-resources
+* Watches for new `Biome` manifests and deploys corresponding sub-resources
 * Watches for updates to existing manifests and changes corresponding properties
 * Watches for deletes of the existing manifests and deletes corresponding
   objects
-* Periodically checks running Habitat resources against the manifests and acts
+* Periodically checks running Biome resources against the manifests and acts
   on the differences found
 
-For instance, when the user creates a new custom object of type Habitat by
+For instance, when the user creates a new custom object of type Biome by
 submitting a new manifest with `kubectl`, the operator fetches that object and
 creates the corresponding Kubernetes structures (`StatefulSet`s, `Deployment`s,
 `ConfigMap`s, `Secret`s, `PersistentVolume`s) according to its definition.
 
-Another example is changing the Docker image inside a Habitat object. In this
+Another example is changing the Docker image inside a Biome object. In this
 case, the operator first goes to all `StatefulSet`s it manages and updates them
 with the new Docker images; afterwards, all `Pod`s from each `StatefulSet` are
 killed one by one ([rolling update][rolling]) and the replacements are spawned
@@ -28,13 +28,13 @@ automatically by each `StatefulSet` with the new Docker image.
 
 ## Service groups
 
-In a non-Kubernetes Habitat setup, every service in a group after the first one
-is [started][hab-sg] with the `--peer` flag, pointing to the first service's IP.
+In a non-Kubernetes Biome setup, every service in a group after the first one
+is [started][bio-sg] with the `--peer` flag, pointing to the first service's IP.
 
 Since it's not possible in Kubernetes to launch `Pod`s in a
 `Deployment`/`StatefulSet` with different arguments, the operator resorts to
 using a `ConfigMap` instead.  `ConfigMap`s can be mounted as files inside
-`Pod`s, and Habitat services can be started with the `--peer-watch-file` flag,
+`Pod`s, and Biome services can be started with the `--peer-watch-file` flag,
 which expects a file.  This allows us to start *all* `Pod`s in the `StatefulSet`
 with the same set of arguments.
 
@@ -49,11 +49,11 @@ assigned to a running `Pod`, and if not, replaces it
 ## Sub-resources
 
 As mentioned above, the operator creates several resources whenever it detects a
-new `Habitat`. These sub-resources, all labeled with `habitat=true`, are to be
+new `Biome`. These sub-resources, all labeled with `biome=true`, are to be
 considered read-only; any modifications to them will be overwritten by the
 operator.
 
-The proper way to make changes is to **always** make them on the Habitat object,
+The proper way to make changes is to **always** make them on the Biome object,
 and let the operator figure out the actual steps it needs to take.
 
 ## CRD Versioning
@@ -67,7 +67,7 @@ workaround currently relies on two steps:
 * Adding a specific key for each version of the spec (i.e. `spec.v1beta2`)
 
 With these workarounds, the operator can support multiple "versions" of the CRD,
-meaning that it can have multiple controllers each watching the Habitat CRD,
+meaning that it can have multiple controllers each watching the Biome CRD,
 deciding which objects to operate on based on the `customVersion` field. In
 reality though, there's only one version Kubernetes knows about, and we
 multiplex our own custom versions in it.
@@ -86,4 +86,4 @@ a timespan of 3 Kubernetes releases, after which they will be removed.
 [rolling]: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#rolling-updates
 [crd-vers]: https://github.com/kubernetes/kubernetes/pull/60113/
 [semver]: https://semver.org/
-[hab-sg]: https://www.habitat.sh/docs/using-habitat/#service-groups
+[bio-sg]: https://www.habitat.sh/docs/using-biome/#service-groups

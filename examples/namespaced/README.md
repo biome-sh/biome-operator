@@ -1,4 +1,4 @@
-# Namespaced Habitat example
+# Namespaced Biome example
 
 This demonstrates how to deploy service in a [Kubernetes namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/).
 
@@ -6,6 +6,6 @@ This demonstrates how to deploy service in a [Kubernetes namespace](https://kube
 
 Simply run:
 
- `kubectl create -f examples/namespaced/habitat.yml`.
+ `kubectl create -f examples/namespaced/biome.yml`.
 
-Note that any Secrets used by a `Habitat` must be in the same namespace as the `Habitat` itself.
+Note that any Secrets used by a `Biome` must be in the same namespace as the `Biome` itself.

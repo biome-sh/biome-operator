@@ -1,0 +1,29 @@
+## Biome-operator image
+##
+image:
+  repository: docker.io/biomesh/biome-operator
+  tag: v0.8.1
+  pullPolicy: IfNotPresent
+
+## Node labels for biome-operator pod assignment
+##
+nodeSelector: {}
+
+## If true, create & use RBAC resources
+##
+rbacEnable: true
+
+## Decide if biome-operator runs at cluster or namespaced scope
+operatorNamespaced: false
+namespace: biome-operator
+
+## Biome-operator resource limits & requests
+## Ref: https://kubernetes.io/docs/user-guide/compute-resources/
+##
+resources: {}
+  # limits:
+  #   cpu: 200m
+  #   memory: 100Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 50Mi

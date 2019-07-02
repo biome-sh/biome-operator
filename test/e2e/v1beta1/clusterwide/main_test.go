@@ -20,9 +20,9 @@ import (
 	"os"
 	"testing"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	habv1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
 
-	of "github.com/habitat-sh/habitat-operator/test/e2e/v1beta1/framework"
+	of "github.com/biome-sh/biome-operator/test/e2e/v1beta1/framework"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	aggregateerr "k8s.io/apimachinery/pkg/util/errors"
@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 		code int
 	)
 
-	image := flag.String("image", "", "habitat operator image, 'habitat/habitat-operator'")
+	image := flag.String("image", "", "biome operator image, 'biomesh/biome-operator'")
 	kubeconfig := flag.String("kubeconfig", "", "path to kube config file")
 	externalIP := flag.String("ip", "", "external ip, eg. minikube ip")
 	flag.Parse()
@@ -72,14 +72,14 @@ func setupOperator(f *of.Framework) error {
 		return errors.Wrap(err, "create RBAC policies for Cluster wide tests failed")
 	}
 
-	// Get Habitat operator deployment from examples.
+	// Get Biome operator deployment from examples.
 	d, err := of.ConvertDeployment("resources/operator/deployment.yml")
 	if err != nil {
 		return errors.Wrap(err, "convert Deployment from yml file failed")
 	}
 	// Override image with the one passed to the tests with one provided in cmd line arg
 	d.Spec.Template.Spec.Containers[0].Image = f.Image
-	// Create deployment for the Habitat operator.
+	// Create deployment for the Biome operator.
 	_, err = f.KubeClient.AppsV1beta1().Deployments(TestNSClusterwide).Create(d)
 	if err != nil {
 		return errors.Wrap(err, "create Deployment failed")
@@ -162,7 +162,7 @@ func cleanup(f *of.Framework) error {
 	}
 
 	// delete CRD
-	name := habv1beta1.Kind(habv1beta1.HabitatResourcePlural)
+	name := biov1beta1.Kind(habv1beta1.BiomeResourcePlural)
 	if err := f.DeleteCRD(name.String()); err != nil {
 		errList = append(errList, err)
 	}

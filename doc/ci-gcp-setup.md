@@ -1,4 +1,4 @@
-# Setting up CircleCI and GCP for Habitat Operator e2e test
+# Setting up CircleCI and GCP for Biome Operator e2e test
 This document explains how to set up and configure Circle CI and Google Cloud for e2e tests to run successfully.
 
 ## Prerequisites
@@ -20,7 +20,7 @@ Your new public/private key pair is generated and downloaded to your machine; it
 * Copy the contents of the JSON file you downloaded to the clipboard.
 * In the CircleCI application, go to your project’s settings by clicking the gear icon on the top right.
 * In the `Build Settings` section, click `Environment Variables`, then click the `Add Variable` button.
-* Name the variable. For the Habitat Operator project, the variable is named `GCLOUD_SERVICE_KEY`.
+* Name the variable. For the Biome Operator project, the variable is named `GCLOUD_SERVICE_KEY`.
 * Paste the JSON file from the first step into the `Value` field.
 * Click the `Add Variable` button.
 
@@ -65,8 +65,8 @@ kubectl create clusterrolebinding cluster-admin-binding --clusterrole cluster-ad
 ```
 This was done to fix the following errors:
 ```
-Error from server (NotFound): error when creating "examples/rbac/rbac.yml": clusterroles.rbac.authorization.k8s.io "habitat-operator" not found
-Error from server (Forbidden): error when creating "examples/rbac/rbac.yml": clusterroles.rbac.authorization.k8s.io "habitat-operator" is forbidden: attempt to grant extra privileges: …
+Error from server (NotFound): error when creating "examples/rbac/rbac.yml": clusterroles.rbac.authorization.k8s.io "biome-operator" not found
+Error from server (Forbidden): error when creating "examples/rbac/rbac.yml": clusterroles.rbac.authorization.k8s.io "biome-operator" is forbidden: attempt to grant extra privileges: …
 ```
 
 ### No Auth Provider found for name "gcp"

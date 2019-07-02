@@ -1,0 +1,21 @@
+apiVersion: biome.sh/v1beta1
+kind: Biome
+metadata:
+  name: example-env-vars-biome
+  labels:
+    source: operator-example
+    app: env-vars-biome
+customVersion: v1beta2
+spec:
+  v1beta2:
+    # the core/redis biome service packaged as a Docker image
+    image: biome/redis-bio
+    count: 1
+    env:
+      - name: HAB_REDIS
+        value: '{ "port": "6999" }'
+    service:
+      name: redis
+      topology: standalone
+      # if not present, defaults to "default"
+      group: foobar

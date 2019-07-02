@@ -17,7 +17,7 @@
 package fake
 
 import (
-	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	biomev1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -48,5 +48,5 @@ func init() {
 // After this, RawExtensions in Kubernetes types will serialize kube-aggregator types
 // correctly.
 func AddToScheme(scheme *runtime.Scheme) {
-	habitatv1beta1.AddToScheme(scheme)
+	biomev1beta1.AddToScheme(scheme)
 }

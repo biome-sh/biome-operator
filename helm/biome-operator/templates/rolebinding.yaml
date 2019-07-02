@@ -1,0 +1,30 @@
+{{- if .Values.operatorNamespaced }}
+{{- if .Values.rbacEnable }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app: {{ template "biome-operator.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+  name: {{ template "biome-operator.fullname" . }}
+  {{- if .Values.namespace }}
+  namespace: {{ .Values.namespace }}
+  {{- else}}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "biome-operator.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ template "biome-operator.fullname" . }}
+  {{- if .Values.namespace }}
+  namespace: {{ .Values.namespace }}
+  {{- else}}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,4 @@
+The Biome Operator has been installed. Check its status by running:
+  kubectl --namespace {{ .Release.Namespace }} get pods -l "app={{ template "biome-operator.name" . }},release={{ .Release.Name }}"
+
+You can now deploy Biome services in the cluster.

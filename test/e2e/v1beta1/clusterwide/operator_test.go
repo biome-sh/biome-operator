@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
-	utils "github.com/habitat-sh/habitat-operator/test/e2e/v1beta1/framework"
+	habv1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
+	utils "github.com/biome-sh/biome-operator/test/e2e/v1beta1/framework"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -35,25 +35,25 @@ const (
 	configMapName = "peer-watch-file"
 )
 
-// TestBind tests that the operator correctly created two Habitat Services and bound them together.
+// TestBind tests that the operator correctly created two Biome Services and bound them together.
 func TestBind(t *testing.T) {
-	// Get Habitat object from Habitat go example.
-	web, err := utils.ConvertHabitat("resources/bind-config/webapp.yml")
+	// Get Biome object from Biome go example.
+	web, err := utils.ConvertBiome("resources/bind-config/webapp.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(web); err != nil {
+	if err := framework.CreateBiome(web); err != nil {
 		t.Fatal(err)
 	}
 
-	// Get Habitat object from Habitat db example.
-	db, err := utils.ConvertHabitat("resources/bind-config/db.yml")
+	// Get Biome object from Biome db example.
+	db, err := utils.ConvertBiome("resources/bind-config/db.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(db); err != nil {
+	if err := framework.CreateBiome(db); err != nil {
 		t.Fatal(err)
 	}
 
@@ -88,10 +88,10 @@ func TestBind(t *testing.T) {
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, web.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.BiomeNameLabel, web.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, db.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.BiomeNameLabel, db.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
@@ -106,7 +106,7 @@ func TestBind(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Get response from Habitat Service.
+	// Get response from Biome Service.
 	url := fmt.Sprintf("http://%s:5555/", loadBalancerIP)
 
 	body, err := utils.QueryService(url)
@@ -114,13 +114,13 @@ func TestBind(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// This msg is set in the config of the habitat/bindgo-hab Go Habitat Service.
+	// This msg is set in the config of the biome/bindgo-bio Go Biome Service.
 	expectedMsg := "hello from port: 4444"
 	actualMsg := body
 	// actualMsg can contain whitespace and newlines or different formatting,
 	// the only thing we need to check is it contains the expectedMsg.
 	if !strings.Contains(actualMsg, expectedMsg) {
-		t.Fatalf("Habitat Service msg does not match one in default.toml. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
+		t.Fatalf("Biome Service msg does not match one in default.toml. Expected: \"%s\", got: \"%s\"", expectedMsg, actualMsg)
 	}
 
 	// Test `user.toml` updates.
@@ -139,7 +139,7 @@ func TestBind(t *testing.T) {
 	timer := time.NewTimer(secretUpdateTimeout)
 	defer timer.Stop()
 
-	// Update the message set in the config of the habitat/bindgo-hab Go Habitat Service.
+	// Update the message set in the config of the biome/bindgo-bio Go Biome Service.
 	expectedMsg = fmt.Sprintf("hello from port: %v", 6333)
 	for {
 		// Check that the port differs after the update.
@@ -174,41 +174,41 @@ func TestBind(t *testing.T) {
 	}
 }
 
-// TestHabitatDelete tests Habitat deletion.
-func TestHabitatDelete(t *testing.T) {
-	// Get Habitat object from Habitat go example.
-	habitat, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+// TestBiomeDelete tests Biome deletion.
+func TestBiomeDelete(t *testing.T) {
+	// Get Biome object from Biome go example.
+	biome, err := utils.ConvertBiome("resources/standalone/biome.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(habitat); err != nil {
+	if err := framework.CreateBiome(biome); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be ready.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitat.ObjectMeta.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.BiomeNameLabel, biome.ObjectMeta.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 
-	// Delete Habitat.
-	if err := framework.DeleteHabitat(habitat.ObjectMeta.Name, TestNSClusterwide); err != nil {
+	// Delete Biome.
+	if err := framework.DeleteBiome(biome.ObjectMeta.Name, TestNSClusterwide); err != nil {
 		t.Fatal(err)
 	}
 
 	// Wait for resources to be deleted.
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, habitat.ObjectMeta.Name, 0); err != nil {
+	if err := framework.WaitForResources(habv1beta1.BiomeNameLabel, biome.ObjectMeta.Name, 0); err != nil {
 		t.Fatal(err)
 	}
 
 	// Check if all the resources the operator creates are deleted.
 	// We do not care about secrets being deleted, as the user needs to delete those manually.
-	d, err := framework.KubeClient.AppsV1beta1().Deployments(TestNSClusterwide).Get(habitat.ObjectMeta.Name, metav1.GetOptions{})
+	d, err := framework.KubeClient.AppsV1beta1().Deployments(TestNSClusterwide).Get(biome.ObjectMeta.Name, metav1.GetOptions{})
 	if err == nil && d != nil {
 		t.Fatal("Deployment was not deleted.")
 	}
 
-	// The CM with the peer IP should still be alive, despite the Habitat being deleted as it was created outside of the scope of a Habitat.
+	// The CM with the peer IP should still be alive, despite the Biome being deleted as it was created outside of the scope of a Biome.
 	_, err = framework.KubeClient.CoreV1().ConfigMaps(TestNSClusterwide).Get(configMapName, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -216,21 +216,21 @@ func TestHabitatDelete(t *testing.T) {
 }
 
 func TestPersistentStorage(t *testing.T) {
-	ephemeral, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+	ephemeral, err := utils.ConvertBiome("resources/standalone/biome.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	persisted, err := utils.ConvertHabitat("resources/persistent/habitat.yml")
+	persisted, err := utils.ConvertBiome("resources/persistent/biome.yml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(ephemeral); err != nil {
+	if err := framework.CreateBiome(ephemeral); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.CreateHabitat(persisted); err != nil {
+	if err := framework.CreateBiome(persisted); err != nil {
 		t.Fatal(err)
 	}
 
@@ -239,7 +239,7 @@ func TestPersistentStorage(t *testing.T) {
 	// also delete the PVs.
 	defer (func(name string) {
 		ls := labels.SelectorFromSet(labels.Set(map[string]string{
-			habv1beta1.HabitatNameLabel: name,
+			habv1beta1.BiomeNameLabel: name,
 		}))
 
 		lo := metav1.ListOptions{
@@ -254,12 +254,12 @@ func TestPersistentStorage(t *testing.T) {
 
 	// Delete the ephemeral resource created
 	defer (func(name string) {
-		if err := framework.DeleteHabitat(name, TestNSClusterwide); err != nil {
+		if err := framework.DeleteBiome(name, TestNSClusterwide); err != nil {
 			t.Fatal(err)
 		}
 	})(ephemeral.Name)
 
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, persisted.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.BiomeNameLabel, persisted.Name, 1); err != nil {
 		t.Fatal(err)
 	}
 

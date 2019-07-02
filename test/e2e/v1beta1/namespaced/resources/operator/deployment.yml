@@ -1,21 +1,21 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: habitat-operator
+  name: biome-operator
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        name: habitat-operator
+        name: biome-operator
     spec:
       containers:
-      - name: habitat-operator
-        image: habitat/habitat-operator:v0.8.1
+      - name: biome-operator
+        image: biomesh/biome-operator:v0.8.1
         env:
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
         args: ["--assume-crd-registered", "--namespace", "$(OPERATOR_NAMESPACE)"]
-      serviceAccountName: habitat-operator
+      serviceAccountName: biome-operator

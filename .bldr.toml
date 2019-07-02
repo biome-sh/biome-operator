@@ -1,4 +1,4 @@
-[habitat-operator]
+[biome-operator]
 plan_path = "habitat"
 paths = [
   "cmd/**/*",

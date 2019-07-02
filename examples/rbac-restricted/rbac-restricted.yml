@@ -1,37 +1,37 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: habitat-operator
+  name: biome-operator
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: habitat-operator
-  namespace: habitat-operator
+  name: biome-operator
+  namespace: biome-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: habitat-operator
-  namespace: habitat-operator
+  name: biome-operator
+  namespace: biome-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: habitat-operator
+  name: biome-operator
 subjects:
 - kind: ServiceAccount
-  name: habitat-operator
+  name: biome-operator
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: habitat-operator
-  namespace: habitat-operator
+  name: biome-operator
+  namespace: biome-operator
 rules:
 - apiGroups:
-  - habitat.sh
+  - biome.sh
   resources:
-  - habitats
+  - biomes
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 - apiGroups:
   - apps

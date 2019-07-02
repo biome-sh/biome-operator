@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script will create a tag from the contents of the VERSION file
-# and push it to the habitat upstream repo.
+# and push it to the biome upstream repo.
 
 set -euo pipefail
 
@@ -32,7 +32,7 @@ main() {
 
   run git tag -a "${VERSION}" -m "${VERSION}"
 
-  REMOTE=$(git remote -v | grep habitat-sh/habitat-operator | tail -1 | cut -f 1)
+  REMOTE=$(git remote -v | grep biome-sh/biome-operator | tail -1 | cut -f 1)
   run git push "${REMOTE}" "${VERSION}"
 }
 

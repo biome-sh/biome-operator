@@ -1,5 +1,5 @@
 FROM scratch
 
-COPY habitat-operator /habitat-operator
+COPY biome-operator /biome-operator
 
-ENTRYPOINT ["/habitat-operator", "-logtostderr"]
+ENTRYPOINT ["/biome-operator", "-logtostderr"]

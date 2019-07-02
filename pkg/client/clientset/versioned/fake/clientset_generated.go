@@ -17,9 +17,9 @@
 package fake
 
 import (
-	clientset "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
-	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
-	fakehabitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1/fake"
+	clientset "github.com/biome-sh/biome-operator/pkg/client/clientset/versioned"
+	biomev1beta1 "github.com/biome-sh/biome-operator/pkg/client/clientset/versioned/typed/biome/v1beta1"
+	fakebiomev1beta1 "github.com/biome-sh/biome-operator/pkg/client/clientset/versioned/typed/biome/v1beta1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -69,12 +69,12 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 
 var _ clientset.Interface = &Clientset{}
 
-// HabitatV1beta1 retrieves the HabitatV1beta1Client
-func (c *Clientset) HabitatV1beta1() habitatv1beta1.HabitatV1beta1Interface {
-	return &fakehabitatv1beta1.FakeHabitatV1beta1{Fake: &c.Fake}
+// BiomeV1beta1 retrieves the BiomeV1beta1Client
+func (c *Clientset) BiomeV1beta1() biomev1beta1.BiomeV1beta1Interface {
+	return &fakebiomev1beta1.FakeBiomeV1beta1{Fake: &c.Fake}
 }
 
-// Habitat retrieves the HabitatV1beta1Client
-func (c *Clientset) Habitat() habitatv1beta1.HabitatV1beta1Interface {
-	return &fakehabitatv1beta1.FakeHabitatV1beta1{Fake: &c.Fake}
+// Biome retrieves the BiomeV1beta1Client
+func (c *Clientset) Biome() biomev1beta1.BiomeV1beta1Interface {
+	return &fakebiomev1beta1.FakeBiomeV1beta1{Fake: &c.Fake}
 }

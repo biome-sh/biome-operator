@@ -4,7 +4,7 @@ The policies defined in this directory are restricted, which limit the operator 
 
 ## Workflow
 
-Before deploying the Habitat operator inside your Kubernetes cluster the following roles must be created:
+Before deploying the Biome operator inside your Kubernetes cluster the following roles must be created:
 
     kubectl apply -f examples/rbac-restricted/rbac-restricted.yml
 
@@ -19,7 +19,7 @@ Since the operator has less permissions, you(as cluster admin) need to create th
     kubectl apply -f examples/rbac-restricted/crd.yml
 
 
-Once those roles were successfully created the Habitat operator can be deployed in the cluster:
+Once those roles were successfully created the Biome operator can be deployed in the cluster:
 
-    kubectl apply -f examples/rbac-restricted/habitat-operator.yml
+    kubectl apply -f examples/rbac-restricted/biome-operator.yml
 

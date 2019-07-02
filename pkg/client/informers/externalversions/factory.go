@@ -21,9 +21,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned"
-	habitat "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions/habitat"
-	internalinterfaces "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions/internalinterfaces"
+	versioned "github.com/biome-sh/biome-operator/pkg/client/clientset/versioned"
+	biome "github.com/biome-sh/biome-operator/pkg/client/informers/externalversions/biome"
+	internalinterfaces "github.com/biome-sh/biome-operator/pkg/client/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -170,9 +170,9 @@ type SharedInformerFactory interface {
 	ForResource(resource schema.GroupVersionResource) (GenericInformer, error)
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
-	Habitat() habitat.Interface
+	Biome() biome.Interface
 }
 
-func (f *sharedInformerFactory) Habitat() habitat.Interface {
-	return habitat.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Biome() biome.Interface {
+	return biome.New(f, f.namespace, f.tweakListOptions)
 }

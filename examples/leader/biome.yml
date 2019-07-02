@@ -1,0 +1,21 @@
+apiVersion: biome.sh/v1beta1
+kind: Biome
+metadata:
+  name: example-leader-follower-biome
+  labels:
+    source: operator-example
+    app: leader-follower-biome
+customVersion: v1beta2
+spec:
+  v1beta2:
+    # the core/redis biome service packaged as a Docker image
+    image: biome/redis-bio
+    # While it is possible to deploy only one pod with a service
+    # instance in the leader-follower topology, at least 3 instances
+    # are required for services to be started by the supervisor.
+    count: 1
+    service:
+      name: redis
+      topology: leader
+      # if not present, defaults to "default"
+      group: foobar

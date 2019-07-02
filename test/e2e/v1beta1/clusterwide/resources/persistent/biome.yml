@@ -1,0 +1,18 @@
+apiVersion: biome.sh/v1beta1
+kind: Biome
+metadata:
+  name: persisted-test
+customVersion: v1beta2
+spec:
+  v1beta2:
+    image: kinvolk/redis-bio
+    count: 1
+    persistentStorage:
+      size: 100Mi
+      # created by default on GCP
+      storageClassName: standard
+      mountPath: /tmp/foo
+    service:
+      name: redis
+      topology: standalone
+      group: foobar

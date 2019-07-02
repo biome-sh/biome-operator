@@ -19,8 +19,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/habitat-sh/habitat-operator/pkg/apis/habitat"
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
+	"github.com/biome-sh/biome-operator/pkg/apis/biome"
+	habv1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
 
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -33,7 +33,7 @@ import (
 const (
 	pollInterval   = 500 * time.Millisecond
 	timeOut        = 10 * time.Second
-	habitatCRDName = habv1beta1.HabitatResourcePlural + "." + habitat.GroupName
+	biomeCRDName = biov1beta1.BiomeResourcePlural + "." + biome.GroupName
 )
 
 type keyNotFoundError struct {
@@ -44,15 +44,15 @@ func (err keyNotFoundError) Error() string {
 	return fmt.Sprintf("could not find Object with key %s in the cache", err.key)
 }
 
-func validateCustomObject(h habv1beta1.Habitat) error {
+func validateCustomObject(h biov1beta1.Biome) error {
 	spec := h.Spec.V1beta2
 	if spec == nil {
 		return fmt.Errorf("missing `spec.v1beta2` field")
 	}
 
 	switch spec.Service.Topology {
-	case habv1beta1.TopologyStandalone:
-	case habv1beta1.TopologyLeader:
+	case biov1beta1.TopologyStandalone:
+	case biov1beta1.TopologyLeader:
 	default:
 		return fmt.Errorf("unknown topology: %s", spec.Service.Topology)
 	}
@@ -71,11 +71,11 @@ func validateCustomObject(h habv1beta1.Habitat) error {
 	return nil
 }
 
-// listOptions adds filtering for Habitat objects by adding a requirement
-// for the Habitat label.
+// listOptions adds filtering for Biome objects by adding a requirement
+// for the Biome label.
 func listOptions() func(*metav1.ListOptions) {
 	ls := labels.SelectorFromSet(labels.Set(map[string]string{
-		habv1beta1.HabitatLabel: "true",
+		habv1beta1.BiomeLabel: "true",
 	}))
 
 	return func(options *metav1.ListOptions) {
@@ -84,20 +84,20 @@ func listOptions() func(*metav1.ListOptions) {
 }
 
 func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.CustomResourceDefinition, error) {
-	name := habv1beta1.Kind(habv1beta1.HabitatResourcePlural)
+	name := biov1beta1.Kind(habv1beta1.BiomeResourcePlural)
 
 	crd := &apiextensionsv1beta1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name.String(),
 		},
 		Spec: apiextensionsv1beta1.CustomResourceDefinitionSpec{
-			Group:   habv1beta1.SchemeGroupVersion.Group,
-			Version: habv1beta1.SchemeGroupVersion.Version,
+			Group:   biov1beta1.SchemeGroupVersion.Group,
+			Version: biov1beta1.SchemeGroupVersion.Version,
 			Scope:   apiextensionsv1beta1.NamespaceScoped,
 			Names: apiextensionsv1beta1.CustomResourceDefinitionNames{
-				Plural:     habv1beta1.HabitatResourcePlural,
-				Kind:       reflect.TypeOf(habv1beta1.Habitat{}).Name(),
-				ShortNames: []string{habv1beta1.HabitatShortName},
+				Plural:     biov1beta1.BiomeResourcePlural,
+				Kind:       reflect.TypeOf(habv1beta1.Biome{}).Name(),
+				ShortNames: []string{habv1beta1.BiomeShortName},
 			},
 		},
 	}
@@ -109,7 +109,7 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 
 	// wait for CRD being established.
 	err = wait.Poll(pollInterval, timeOut, func() (bool, error) {
-		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(habitatCRDName, metav1.GetOptions{})
+		crd, err = clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Get(biomeCRDName, metav1.GetOptions{})
 
 		if err != nil {
 			return false, err
@@ -134,7 +134,7 @@ func CreateCRD(clientset apiextensionsclient.Interface) (*apiextensionsv1beta1.C
 
 	// delete CRD if there was an error.
 	if err != nil {
-		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(habitatCRDName, nil)
+		deleteErr := clientset.ApiextensionsV1beta1().CustomResourceDefinitions().Delete(biomeCRDName, nil)
 		if deleteErr != nil {
 			return nil, errors.NewAggregate([]error{err, deleteErr})
 		}

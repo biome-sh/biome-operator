@@ -1,8 +1,8 @@
 HUB :=
-GITHUB_ORG := habitat-sh
-DOCKER_ORG := habitat
-IMAGE := $(if $(HUB),$(HUB)/)$(DOCKER_ORG)/habitat-operator
-BIN_PATH := habitat-operator
+GITHUB_ORG := biome-sh
+DOCKER_ORG := biomesh
+IMAGE := $(if $(HUB),$(HUB)/)$(DOCKER_ORG)/biome-operator
+BIN_PATH := biome-operator
 TAG := $(shell git describe --tags --always)
 TESTIMAGE :=
 SUDO :=
@@ -18,15 +18,15 @@ endif
 
 .PHONY: build
 build:
-	go build -ldflags="-X github.com/$(GITHUB_ORG)/habitat-operator/pkg/version.VERSION=$(VERSION)" \
-		github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
+	go build -ldflags="-X github.com/$(GITHUB_ORG)/biome-operator/pkg/version.VERSION=$(VERSION)" \
+		github.com/$(GITHUB_ORG)/biome-operator/cmd/biome-operator
 
 .PHONY: linux
 linux: build
 	# Compile statically linked binary for linux.
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s" \
-		-ldflags="-X github.com/$(GITHUB_ORG)/habitat-operator/pkg/version.VERSION=$(VERSION)" \
-		-o $(BIN_PATH) github.com/$(GITHUB_ORG)/habitat-operator/cmd/habitat-operator
+		-ldflags="-X github.com/$(GITHUB_ORG)/biome-operator/pkg/version.VERSION=$(VERSION)" \
+		-o $(BIN_PATH) github.com/$(GITHUB_ORG)/biome-operator/cmd/biome-operator
 
 .PHONY: print-version
 print-version:
@@ -40,7 +40,7 @@ image: linux
 test:
 	go test $(shell go list ./... | grep -v /vendor/ | grep -v /test/)
 	# Run the RBAC sync tests
-	go test github.com/habitat-sh/habitat-operator/test/sync/rbac
+	go test github.com/biome-sh/biome-operator/test/sync/rbac
 
 # requires minikube or any kubernetes cluster to be running
 .PHONY: e2e
@@ -57,9 +57,9 @@ e2e: clean-test
 clean-test:
 	# Delete resources created for the clusterwide tests
 	-kubectl delete namespace testing-clusterwide
-	-kubectl delete clusterrolebinding habitat-operator-v1beta1
-	-kubectl delete clusterrole habitat-operator-v1beta1
-	-kubectl delete crd habitats.habitat.sh
+	-kubectl delete clusterrolebinding biome-operator-v1beta1
+	-kubectl delete clusterrole biome-operator-v1beta1
+	-kubectl delete crd biomes.biome.sh
 	# Delete resources created for the namespaced tests
 	-kubectl delete namespace testing-namespaced
 
@@ -67,7 +67,7 @@ clean-test:
 update-version:
 	find examples -name "*.yml" -type f \
 		-exec sed -i.bak \
-		-e "s/habitat-operator:.*/habitat-operator:v$$(cat VERSION)/g" \
+		-e "s/biome-operator:.*/biome-operator:v$$(cat VERSION)/g" \
 		'{}' \;
 	find helm -name "*.yaml" -type f \
 		-exec sed -i.bak \
@@ -79,14 +79,14 @@ update-version:
 	sed \
 		-i.bak \
 		-e 's/\(e\.g `v\).*\(`\)/\1'"$$(cat VERSION)"'\2/' \
-		helm/habitat-operator/README.md
-	rm -f helm/habitat-operator/README.md.bak
+		helm/biome-operator/README.md
+	rm -f helm/biome-operator/README.md.bak
 	# The deployments artifact for clusterwide and namespaced tests should be updated
 	# to have the newer updated image name
 	for f in test/e2e/v1beta1/{clusterwide,namespaced}/resources/operator/deployment.yml; do \
 		sed \
 			-i.bak \
-			-e "s/\(habitat-operator:v\).*/\1$$(cat VERSION)/g" $$f; \
+			-e "s/\(biome-operator:v\).*/\1$$(cat VERSION)/g" $$f; \
 		rm -f $$f.bak; \
 	done
 

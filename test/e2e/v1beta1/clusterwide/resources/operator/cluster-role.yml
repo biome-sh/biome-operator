@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: habitat-operator-v1beta1
+  name: biome-operator-v1beta1
 # Keep Cluster wide permissions at the top of the list and then update
 # `TestRolesAndClusterRolesSync` in `test/sync/rbac` package to exclude
 # those rules
@@ -16,9 +16,9 @@ rules:
   - namespaces
   verbs: ["list"]
 - apiGroups:
-  - habitat.sh
+  - biome.sh
   resources:
-  - habitats
+  - biomes
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 - apiGroups:
   - apps

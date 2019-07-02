@@ -29,6 +29,6 @@ readonly CODEGEN_DIR="${SCRIPT_ROOT}/vendor/k8s.io/code-generator"
 #                  k8s.io/kubernetes. The output-base is needed for the generators to output into the vendor dir
 #                  instead of the $GOPATH directly. For normal projects this can be dropped.
 "${CODEGEN_DIR}"/generate-groups.sh all \
-  github.com/habitat-sh/habitat-operator/pkg/client github.com/habitat-sh/habitat-operator/pkg/apis \
-  habitat:v1beta1 \
+  github.com/biome-sh/biome-operator/pkg/client github.com/biome-sh/biome-operator/pkg/apis \
+  biome:v1beta1 \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate.go.txt

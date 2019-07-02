@@ -1,0 +1,15 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: biome-operator
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: biome-operator
+    spec:
+      containers:
+      - name: biome-operator
+        image: biomesh/biome-operator:v0.8.1
+      serviceAccountName: biome-operator

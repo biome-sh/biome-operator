@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
-	habscheme "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/scheme"
-	habinformers "github.com/habitat-sh/habitat-operator/pkg/client/informers/externalversions"
+	habv1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
+	habscheme "github.com/biome-sh/biome-operator/pkg/client/clientset/versioned/scheme"
+	habinformers "github.com/biome-sh/biome-operator/pkg/client/informers/externalversions"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -50,7 +50,7 @@ const (
 	resyncPeriod = 1 * time.Minute
 
 	userTOMLFile = "user.toml"
-	configMapDir = "/habitat-operator"
+	configMapDir = "/biome-operator"
 
 	peerFilename  = "peer-ip"
 	peerFile      = "peer-watch-file"
@@ -68,7 +68,7 @@ const (
 
 	filesDirectoryName = "files"
 
-	controllerAgentName = "habitat-controller"
+	controllerAgentName = "biome-controller"
 
 	// Events.
 	validationFailed = "ValidationFailed"
@@ -79,7 +79,7 @@ const (
 	stsFailed        = "StatefulSetCreationFailed"
 
 	// Event messages.
-	messageValidationFailed = "Failed validating Habitat"
+	messageValidationFailed = "Failed validating Biome"
 	messageCMCreated        = "Created peer IP ConfigMap"
 	messageCMUpdated        = "Updated peer IP ConfigMap"
 	messageCMFailed         = "Failed creating ConfigMap"
@@ -92,11 +92,11 @@ const (
 
 var ringRegexp *regexp.Regexp = regexp.MustCompile(ringKeyRegexp)
 
-type HabitatController struct {
+type BiomeController struct {
 	config Config
 	logger log.Logger
 
-	// queue contains the jobs that will be handled by syncHabitat.
+	// queue contains the jobs that will be handled by syncBiome.
 	// A workqueue.RateLimitingInterface is a queue where failing jobs are re-enqueued with an exponential
 	// delay, so that jobs in a crashing loop don't fill the queue.
 	queue workqueue.RateLimitingInterface
@@ -114,17 +114,17 @@ type HabitatController struct {
 }
 
 type Config struct {
-	HabitatClient          rest.Interface
+	BiomeClient          rest.Interface
 	KubernetesClientset    *kubernetes.Clientset
 	ClusterConfig          *rest.Config
 	KubeInformerFactory    kubeinformers.SharedInformerFactory
-	HabitatInformerFactory habinformers.SharedInformerFactory
+	BiomeInformerFactory bioinformers.SharedInformerFactory
 	Namespace              string
 }
 
-func New(config Config, logger log.Logger) (*HabitatController, error) {
-	if config.HabitatClient == nil {
-		return nil, errors.New("invalid controller config: no HabitatClient")
+func New(config Config, logger log.Logger) (*BiomeController, error) {
+	if config.BiomeClient == nil {
+		return nil, errors.New("invalid controller config: no BiomeClient")
 	}
 	if config.KubernetesClientset == nil {
 		return nil, errors.New("invalid controller config: no KubernetesClientset")
@@ -132,8 +132,8 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	if config.KubeInformerFactory == nil {
 		return nil, errors.New("invalid controller config: no KubeInformerFactory")
 	}
-	if config.HabitatInformerFactory == nil {
-		return nil, errors.New("invalid controller config: no HabitatInformerFactory")
+	if config.BiomeInformerFactory == nil {
+		return nil, errors.New("invalid controller config: no BiomeInformerFactory")
 	}
 	if logger == nil {
 		return nil, errors.New("invalid controller config: no logger")
@@ -145,30 +145,30 @@ func New(config Config, logger log.Logger) (*HabitatController, error) {
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: config.KubernetesClientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, apiv1.EventSource{Component: controllerAgentName})
 
-	hc := &HabitatController{
+	hc := &BiomeController{
 		config:   config,
 		logger:   logger,
-		queue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Habitats"),
+		queue:    workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "Biomes"),
 		recorder: recorder,
 	}
 
 	return hc, nil
 }
 
-// Run starts a Habitat resource controller.
-func (hc *HabitatController) Run(ctx context.Context, workers int) error {
-	level.Info(hc.logger).Log("msg", "Watching Habitat objects")
+// Run starts a Biome resource controller.
+func (hc *BiomeController) Run(ctx context.Context, workers int) error {
+	level.Info(hc.logger).Log("msg", "Watching Biome objects")
 
 	var wg sync.WaitGroup
 	wg.Add(4 + workers)
 
-	hc.cacheHabitats()
+	hc.cacheBiomes()
 	hc.cacheStatefulSets()
 	hc.cacheConfigMaps()
 	hc.watchPods(ctx, &wg)
 
 	go func() {
-		hc.habInformer.Run(ctx.Done())
+		hc.bioInformer.Run(ctx.Done())
 		wg.Done()
 	}()
 
@@ -183,7 +183,7 @@ func (hc *HabitatController) Run(ctx context.Context, workers int) error {
 	}()
 
 	// Wait for caches to be synced before starting workers.
-	if !cache.WaitForCacheSync(ctx.Done(), hc.habInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
+	if !cache.WaitForCacheSync(ctx.Done(), hc.bioInformerSynced, hc.stsInformerSynced, hc.cmInformerSynced) {
 		return nil
 	}
 	level.Debug(hc.logger).Log("msg", "Caches synced")
@@ -211,19 +211,19 @@ func (hc *HabitatController) Run(ctx context.Context, workers int) error {
 	return ctx.Err()
 }
 
-func (hc *HabitatController) cacheHabitats() {
-	hc.habInformer = hc.config.HabitatInformerFactory.Habitat().V1beta1().Habitats().Informer()
+func (hc *BiomeController) cacheBiomes() {
+	hc.bioInformer = hc.config.BiomeInformerFactory.Biome().V1beta1().Biomes().Informer()
 
-	hc.habInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	hc.bioInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    hc.handleHabAdd,
 		UpdateFunc: hc.handleHabUpdate,
 		DeleteFunc: hc.handleHabDelete,
 	})
 
-	hc.habInformerSynced = hc.habInformer.HasSynced
+	hc.bioInformerSynced = hc.bioInformer.HasSynced
 }
 
-func (hc *HabitatController) cacheConfigMaps() {
+func (hc *BiomeController) cacheConfigMaps() {
 	hc.cmInformer = hc.config.KubeInformerFactory.Core().V1().ConfigMaps().Informer()
 
 	hc.cmInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -235,7 +235,7 @@ func (hc *HabitatController) cacheConfigMaps() {
 	hc.cmInformerSynced = hc.cmInformer.HasSynced
 }
 
-func (hc *HabitatController) watchPods(ctx context.Context, wg *sync.WaitGroup) {
+func (hc *BiomeController) watchPods(ctx context.Context, wg *sync.WaitGroup) {
 	source := cache.NewFilteredListWatchFromClient(
 		hc.config.KubernetesClientset.CoreV1().RESTClient(),
 		"Pods",
@@ -261,55 +261,55 @@ func (hc *HabitatController) watchPods(ctx context.Context, wg *sync.WaitGroup) 
 	}()
 }
 
-func (hc *HabitatController) handleHabAdd(obj interface{}) {
-	h, ok := obj.(*habv1beta1.Habitat)
+func (hc *BiomeController) handleHabAdd(obj interface{}) {
+	h, ok := obj.(*habv1beta1.Biome)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert Biome", "obj", obj)
 		return
 	}
 
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handleHabUpdate(oldObj, newObj interface{}) {
-	oldHab, ok := oldObj.(*habv1beta1.Habitat)
+func (hc *BiomeController) handleHabUpdate(oldObj, newObj interface{}) {
+	oldHab, ok := oldObj.(*habv1beta1.Biome)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", oldObj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert Biome", "obj", oldObj)
 		return
 	}
 
-	newHab, ok := newObj.(*habv1beta1.Habitat)
+	newHab, ok := newObj.(*habv1beta1.Biome)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", newObj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert Biome", "obj", newObj)
 		return
 	}
 
-	if hc.habitatNeedsUpdate(oldHab, newHab) {
+	if hc.biomeNeedsUpdate(oldHab, newHab) {
 		hc.enqueue(newHab)
 	}
 }
 
-func (hc *HabitatController) handleHabDelete(obj interface{}) {
-	h, ok := obj.(*habv1beta1.Habitat)
+func (hc *BiomeController) handleHabDelete(obj interface{}) {
+	h, ok := obj.(*habv1beta1.Biome)
 	if !ok {
-		level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+		level.Error(hc.logger).Log("msg", "Failed to type assert Biome", "obj", obj)
 		return
 	}
 
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handleCM(obj interface{}) {
+func (hc *BiomeController) handleCM(obj interface{}) {
 	cm, ok := obj.(*apiv1.ConfigMap)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert ConfigMap", "obj", obj)
 		return
 	}
 
-	cache.ListAll(hc.habInformer.GetStore(), labels.Everything(), func(obj interface{}) {
-		h, ok := obj.(*habv1beta1.Habitat)
+	cache.ListAll(hc.bioInformer.GetStore(), labels.Everything(), func(obj interface{}) {
+		h, ok := obj.(*habv1beta1.Biome)
 		if !ok {
-			level.Error(hc.logger).Log("msg", "Failed to type assert Habitat", "obj", obj)
+			level.Error(hc.logger).Log("msg", "Failed to type assert Biome", "obj", obj)
 			return
 		}
 
@@ -319,26 +319,26 @@ func (hc *HabitatController) handleCM(obj interface{}) {
 	})
 }
 
-func (hc *HabitatController) handleCMAdd(obj interface{}) {
+func (hc *BiomeController) handleCMAdd(obj interface{}) {
 	hc.handleCM(obj)
 }
 
-func (hc *HabitatController) handleCMUpdate(oldObj, newObj interface{}) {
+func (hc *BiomeController) handleCMUpdate(oldObj, newObj interface{}) {
 	hc.handleCM(newObj)
 }
 
-func (hc *HabitatController) handleCMDelete(obj interface{}) {
+func (hc *BiomeController) handleCMDelete(obj interface{}) {
 	hc.handleCM(obj)
 }
 
-func (hc *HabitatController) handlePodAdd(obj interface{}) {
+func (hc *BiomeController) handlePodAdd(obj interface{}) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", obj)
 		return
 	}
-	if isHabitatObject(&pod.ObjectMeta) {
-		h, err := hc.getHabitatFromLabeledResource(pod)
+	if isBiomeObject(&pod.ObjectMeta) {
+		h, err := hc.getBiomeFromLabeledResource(pod)
 		if err != nil {
 			level.Error(hc.logger).Log("msg", err)
 			return
@@ -348,7 +348,7 @@ func (hc *HabitatController) handlePodAdd(obj interface{}) {
 	}
 }
 
-func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
+func (hc *BiomeController) handlePodUpdate(oldObj, newObj interface{}) {
 	oldPod, ok1 := oldObj.(*apiv1.Pod)
 	if !ok1 {
 		level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", oldObj)
@@ -365,15 +365,15 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(newPod)
+	h, err := hc.getBiomeFromLabeledResource(newPod)
 	if err != nil {
 		if hErr, ok := err.(keyNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr, "key", hErr.key)
 			return
 		}
 
-		// This only means the Pod and the Habitat watchers are not in sync.
-		level.Debug(hc.logger).Log("msg", "Habitat not found", "function", "handlePodUpdate")
+		// This only means the Pod and the Biome watchers are not in sync.
+		level.Debug(hc.logger).Log("msg", "Biome not found", "function", "handlePodUpdate")
 
 		return
 	}
@@ -381,26 +381,26 @@ func (hc *HabitatController) handlePodUpdate(oldObj, newObj interface{}) {
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) handlePodDelete(obj interface{}) {
+func (hc *BiomeController) handlePodDelete(obj interface{}) {
 	pod, ok := obj.(*apiv1.Pod)
 	if !ok {
 		level.Error(hc.logger).Log("msg", "Failed to type assert pod", "obj", obj)
 		return
 	}
 
-	if !isHabitatObject(&pod.ObjectMeta) {
+	if !isBiomeObject(&pod.ObjectMeta) {
 		return
 	}
 
-	h, err := hc.getHabitatFromLabeledResource(pod)
+	h, err := hc.getBiomeFromLabeledResource(pod)
 	if err != nil {
 		if hErr, ok := err.(keyNotFoundError); !ok {
 			level.Error(hc.logger).Log("msg", hErr, "key", hErr.key)
 			return
 		}
 
-		// This only means the Pod and the Habitat watchers are not in sync.
-		level.Debug(hc.logger).Log("msg", "Habitat not found", "function", "handlePodDelete")
+		// This only means the Pod and the Biome watchers are not in sync.
+		level.Debug(hc.logger).Log("msg", "Biome not found", "function", "handlePodDelete")
 
 		return
 	}
@@ -408,12 +408,12 @@ func (hc *HabitatController) handlePodDelete(obj interface{}) {
 	hc.enqueue(h)
 }
 
-func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, error) {
+func (hc *BiomeController) getRunningPods(namespace string) ([]apiv1.Pod, error) {
 	fs := fields.SelectorFromSet(fields.Set{
 		"status.phase": string(apiv1.PodRunning),
 	})
 	ls := fields.SelectorFromSet(fields.Set(map[string]string{
-		habv1beta1.HabitatLabel: "true",
+		habv1beta1.BiomeLabel: "true",
 	}))
 
 	running := metav1.ListOptions{
@@ -429,7 +429,7 @@ func (hc *HabitatController) getRunningPods(namespace string) ([]apiv1.Pod, erro
 	return pods.Items, nil
 }
 
-func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error {
+func (hc *BiomeController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error {
 	cm.Data[peerFile] = ip
 
 	if _, err := hc.config.KubernetesClientset.CoreV1().ConfigMaps(cm.Namespace).Update(cm); err != nil {
@@ -439,7 +439,7 @@ func (hc *HabitatController) writeLeaderIP(cm *apiv1.ConfigMap, ip string) error
 	return nil
 }
 
-func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
+func (hc *BiomeController) handleConfigMap(h *habv1beta1.Biome) error {
 	runningPods, err := hc.getRunningPods(h.Namespace)
 	if err != nil {
 		return err
@@ -524,9 +524,9 @@ func (hc *HabitatController) handleConfigMap(h *habv1beta1.Habitat) error {
 	return nil
 }
 
-func (hc *HabitatController) enqueue(hab *habv1beta1.Habitat) {
-	if hab == nil {
-		level.Error(hc.logger).Log("msg", "Habitat object was nil", "object", hab)
+func (hc *BiomeController) enqueue(bio *habv1beta1.Biome) {
+	if bio == nil {
+		level.Error(hc.logger).Log("msg", "Biome object was nil", "object", bio)
 		return
 	}
 
@@ -537,19 +537,19 @@ func (hc *HabitatController) enqueue(hab *habv1beta1.Habitat) {
 
 	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(hab)
 	if err != nil {
-		level.Error(hc.logger).Log("msg", "Habitat object key could not be retrieved", "object", hab)
+		level.Error(hc.logger).Log("msg", "Biome object key could not be retrieved", "object", bio)
 		return
 	}
 
 	hc.queue.Add(k)
 }
 
-func (hc *HabitatController) worker() {
+func (hc *BiomeController) worker() {
 	for hc.processNextItem() {
 	}
 }
 
-func (hc *HabitatController) processNextItem() bool {
+func (hc *BiomeController) processNextItem() bool {
 	// Process an item, unless `queue.ShutDown()` has been called, in which case we exit.
 	key, quit := hc.queue.Get()
 	if quit {
@@ -570,7 +570,7 @@ func (hc *HabitatController) processNextItem() bool {
 	defer hc.queue.Done(key)
 
 	if err := hc.conform(k); err != nil {
-		level.Error(hc.logger).Log("msg", "Habitat could not be synced, requeueing", "err", err, "obj", k)
+		level.Error(hc.logger).Log("msg", "Biome could not be synced, requeueing", "err", err, "obj", k)
 
 		hc.queue.AddRateLimited(k)
 
@@ -585,25 +585,25 @@ func (hc *HabitatController) processNextItem() bool {
 
 // conform is where the reconciliation takes place.
 // It is invoked when any of the following resources get created, updated or deleted:
-// Habitat, Pod, StatefulSet, ConfigMap.
-func (hc *HabitatController) conform(key string) error {
-	obj, exists, err := hc.habInformer.GetStore().GetByKey(key)
+// Biome, Pod, StatefulSet, ConfigMap.
+func (hc *BiomeController) conform(key string) error {
+	obj, exists, err := hc.bioInformer.GetStore().GetByKey(key)
 	if err != nil {
 		return err
 	}
 	if !exists {
-		// The Habitat was deleted.
-		level.Info(hc.logger).Log("msg", "deleted Habitat", "key", key)
+		// The Biome was deleted.
+		level.Info(hc.logger).Log("msg", "deleted Biome", "key", key)
 		return nil
 	}
 
-	// The Habitat was either created or updated.
-	h, ok := obj.(*habv1beta1.Habitat)
+	// The Biome was either created or updated.
+	h, ok := obj.(*habv1beta1.Biome)
 	if !ok {
 		return fmt.Errorf("unknown event type")
 	}
 
-	level.Debug(hc.logger).Log("function", "handle Habitat Creation", "msg", h.ObjectMeta.SelfLink)
+	level.Debug(hc.logger).Log("function", "handle Biome Creation", "msg", h.ObjectMeta.SelfLink)
 
 	// Validate object.
 	if err := validateCustomObject(*h); err != nil {
@@ -635,7 +635,7 @@ func (hc *HabitatController) conform(key string) error {
 				return err
 			}
 
-			// Workaround for upstream bug with the habitat supervisor.
+			// Workaround for upstream bug with the biome supervisor.
 			// https://github.com/habitat-sh/habitat/issues/5264
 			//
 			// When the bug is fixed and the workaround is removed, make
@@ -668,16 +668,16 @@ func (hc *HabitatController) conform(key string) error {
 	return nil
 }
 
-func (hc *HabitatController) habitatNeedsUpdate(oldHabitat, newHabitat *habv1beta1.Habitat) bool {
-	if reflect.DeepEqual(oldHabitat.Spec.V1beta2, newHabitat.Spec.V1beta2) {
-		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Habitat spec", "h", newHabitat)
+func (hc *BiomeController) biomeNeedsUpdate(oldBiome, newBiome *habv1beta1.Biome) bool {
+	if reflect.DeepEqual(oldBiome.Spec.V1beta2, newBiome.Spec.V1beta2) {
+		level.Debug(hc.logger).Log("msg", "Update ignored as it didn't change Biome spec", "h", newBiome)
 		return false
 	}
 
 	return true
 }
 
-func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
+func (hc *BiomeController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 	// Ignore identical objects.
 	// https://github.com/kubernetes/kubernetes/blob/7e630154dfc7b2155f8946a06f92e96e268dcbcd/pkg/controller/replicaset/replica_set.go#L276-L277
 	if oldPod.ResourceVersion == newPod.ResourceVersion {
@@ -694,13 +694,13 @@ func (hc *HabitatController) podNeedsUpdate(oldPod, newPod *apiv1.Pod) bool {
 	return true
 }
 
-func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*habv1beta1.Habitat, error) {
-	key, err := habitatKeyFromLabeledResource(r)
+func (hc *BiomeController) getBiomeFromLabeledResource(r metav1.Object) (*habv1beta1.Biome, error) {
+	key, err := biomeKeyFromLabeledResource(r)
 	if err != nil {
 		return nil, err
 	}
 
-	obj, exists, err := hc.habInformer.GetStore().GetByKey(key)
+	obj, exists, err := hc.bioInformer.GetStore().GetByKey(key)
 	if err != nil {
 		return nil, err
 	}
@@ -708,18 +708,18 @@ func (hc *HabitatController) getHabitatFromLabeledResource(r metav1.Object) (*ha
 		return nil, keyNotFoundError{key: key}
 	}
 
-	h, ok := obj.(*habv1beta1.Habitat)
+	h, ok := obj.(*habv1beta1.Biome)
 	if !ok {
-		return nil, fmt.Errorf("unknown object type in Habitat cache: %v", obj)
+		return nil, fmt.Errorf("unknown object type in Biome cache: %v", obj)
 	}
 
 	return h, nil
 }
 
-// habitatKeyFromLabeledResource returns a Store key for any resource tagged
-// with the `HabitatNameLabel`.
-func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
-	labelName := habv1beta1.HabitatNameLabel
+// biomeKeyFromLabeledResource returns a Store key for any resource tagged
+// with the `BiomeNameLabel`.
+func biomeKeyFromLabeledResource(r metav1.Object) (string, error) {
+	labelName := biov1beta1.BiomeNameLabel
 	hName, ok := r.GetLabels()[labelName]
 	if !ok {
 		return "", fmt.Errorf("Could not retrieve %q label", labelName)
@@ -732,20 +732,20 @@ func habitatKeyFromLabeledResource(r metav1.Object) (string, error) {
 	return key, nil
 }
 
-// newConfigMap takes in ip and the habitat object and creates configmap
+// newConfigMap takes in ip and the biome object and creates configmap
 // using it. The name of the configmap is fixed.
-func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
+func newConfigMap(ip string, h *habv1beta1.Biome) *apiv1.ConfigMap {
 	return &apiv1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMapName,
 			Namespace: h.Namespace,
 			Labels: map[string]string{
-				habv1beta1.HabitatLabel: "true",
+				habv1beta1.BiomeLabel: "true",
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				metav1.OwnerReference{
-					APIVersion: habv1beta1.SchemeGroupVersion.String(),
-					Kind:       habv1beta1.HabitatKind,
+					APIVersion: biov1beta1.SchemeGroupVersion.String(),
+					Kind:       biov1beta1.BiomeKind,
 					Name:       h.Name,
 					UID:        h.UID,
 				},
@@ -757,11 +757,11 @@ func newConfigMap(ip string, h *habv1beta1.Habitat) *apiv1.ConfigMap {
 	}
 }
 
-func isHabitatObject(objMeta *metav1.ObjectMeta) bool {
-	return objMeta.Labels[habv1beta1.HabitatLabel] == "true"
+func isBiomeObject(objMeta *metav1.ObjectMeta) bool {
+	return objMeta.Labels[habv1beta1.BiomeLabel] == "true"
 }
 
-func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.ConfigMap, error) {
+func (hc *BiomeController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.ConfigMap, error) {
 	k, err := cache.DeletionHandlingMetaNamespaceKeyFunc(cm)
 	if err != nil {
 		level.Error(hc.logger).Log("msg", "ConfigMap key could not be retrieved", "name", cm)
@@ -779,7 +779,7 @@ func (hc *HabitatController) findConfigMapInCache(cm *apiv1.ConfigMap) (*apiv1.C
 	return obj.(*apiv1.ConfigMap), nil
 }
 
-func (hc *HabitatController) deleteStatefulSetPods(sts *appsv1.StatefulSet) error {
+func (hc *BiomeController) deleteStatefulSetPods(sts *appsv1.StatefulSet) error {
 	fs := fields.SelectorFromSet(fields.Set(sts.Spec.Selector.MatchLabels))
 
 	listOptions := metav1.ListOptions{

@@ -25,7 +25,7 @@ func TestClusterRolesSync(t *testing.T) {
 	testRules, err := extractRulesFromClusterRoles("test/e2e/v1beta1/clusterwide/resources/operator/cluster-role.yml")
 	require.NoError(t, err, "extracting Rules from ClusterRole failed for rbac in tests")
 
-	helmRules, err := extractRulesFromHelm("helm/habitat-operator/templates/clusterrole.yaml", true)
+	helmRules, err := extractRulesFromHelm("helm/biome-operator/templates/clusterrole.yaml", true)
 	require.NoError(t, err, "extracting Rules from Helm ClusterRole failed")
 
 	require.Equal(t, exampleRules, testRules, "ClusterRole from 'example' and 'test' not equal")
@@ -41,7 +41,7 @@ func TestRolesSync(t *testing.T) {
 	testRules, err := extractRulesFromRoles("test/e2e/v1beta1/namespaced/resources/operator/role.yml")
 	require.NoError(t, err, "extracting Rules from Role failed for rbac in tests")
 
-	helmRules, err := extractRulesFromHelm("helm/habitat-operator/templates/role.yaml", false)
+	helmRules, err := extractRulesFromHelm("helm/biome-operator/templates/role.yaml", false)
 	require.NoError(t, err, "extracting Rules from Helm Role failed")
 
 	require.Equal(t, exampleRules, testRules, "Role from 'example' and 'test' not equal")
@@ -73,9 +73,9 @@ func TestRolesAndClusterRolesSync(t *testing.T) {
 	//      - namespaces
 	//      verbs: ["list"]
 	//    - apiGroups:
-	//      - habitat.sh
+	//      - biome.sh
 	//      resources:
-	//      - habitats
+	//      - biomes
 	//      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 	//
 	// The first two rules for CRD and Namespaces are extra permissions that ClusterRole has
@@ -156,9 +156,9 @@ func parseClusterRoles(d []byte) ([]rbacv1.PolicyRule, error) {
 // function renders the Chart and returns Rules the appopriate file passed in 'path'.
 func extractRulesFromHelm(path string, isItClusterRole bool) ([]rbacv1.PolicyRule, error) {
 	// Paths are evaluated as follows
-	// path: helm/habitat-operator/templates/clusterrole.yaml
-	// chartPath: helm/habitat-operator
-	// rolePath: habitat-operator/templates/clusterrole.yaml
+	// path: helm/biome-operator/templates/clusterrole.yaml
+	// chartPath: helm/biome-operator
+	// rolePath: biome-operator/templates/clusterrole.yaml
 	paths := strings.Split(path, "/")
 	chartPath := strings.Join(paths[:2], "/")
 	rolePath := strings.Join(paths[1:], "/")

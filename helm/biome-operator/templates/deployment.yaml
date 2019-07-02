@@ -1,0 +1,49 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ template "biome-operator.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    operator: biome
+    release: {{ .Release.Name }}
+  name: {{ template "biome-operator.fullname" . }}
+  {{- if .Values.namespace }}
+  namespace: {{ .Values.namespace }}
+  {{- else}}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: {{ template "biome-operator.fullname" . }}
+        app: {{ template "biome-operator.name" . }}
+        operator: biome
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ template "biome-operator.name" . }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+        {{- if .Values.operatorNamespaced }}
+        # When running in a namespaced environment, we need to provide the
+        # extra arguments to the operator about the namespace it should
+        # watch for biome objects and that CRD is already registered
+        env:
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        args: ["--assume-crd-registered", "--namespace", "$(OPERATOR_NAMESPACE)"]
+        {{- end }}
+        resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+    {{- end }}
+    {{- if .Values.rbacEnable }}
+      serviceAccountName: {{ template "biome-operator.fullname" . }}
+    {{- end }}

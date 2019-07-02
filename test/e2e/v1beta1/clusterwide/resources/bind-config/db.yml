@@ -1,11 +1,11 @@
-apiVersion: habitat.sh/v1beta1
-kind: Habitat 
+apiVersion: biome.sh/v1beta1
+kind: Biome 
 metadata:
   name: test-redis
 customVersion: v1beta2
 spec:
   v1beta2:
-    image: habitat/redis-hab
+    image: biome/redis-bio
     count: 1
     service:
       name: redis

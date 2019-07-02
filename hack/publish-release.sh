@@ -9,7 +9,7 @@ DRY_RUN=1
 readonly VERSION="v$(cat VERSION)"
 
 if [ "${VERSION}" != $(make print-version) ]; then
-  echo "Version in 'VERSION' file ${VERSION} & git tag $(make print-version) don't match! Follow the release steps mentioned in https://github.com/habitat-sh/habitat-operator/blob/master/doc/release-process.md"
+  echo "Version in 'VERSION' file ${VERSION} & git tag $(make print-version) don't match! Follow the release steps mentioned in https://github.com/biome-sh/biome-operator/blob/master/doc/release-process.md"
   exit 1
 fi
 
@@ -34,9 +34,9 @@ main() {
   fi
 
   run make image
-  run docker push habitat/habitat-operator:"${VERSION}"
-  run docker tag habitat/habitat-operator:"${VERSION}" habitat/habitat-operator:latest
-  run docker push habitat/habitat-operator:latest
+  run docker push biomesh/biome-operator:"${VERSION}"
+  run docker tag biomesh/biome-operator:"${VERSION}" biomesh/biome-operator:latest
+  run docker push biomesh/biome-operator:latest
 }
 
 main "$@"

@@ -17,7 +17,7 @@
 package versioned
 
 import (
-	habitatv1beta1 "github.com/habitat-sh/habitat-operator/pkg/client/clientset/versioned/typed/habitat/v1beta1"
+	biomev1beta1 "github.com/biome-sh/biome-operator/pkg/client/clientset/versioned/typed/biome/v1beta1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -25,27 +25,27 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	HabitatV1beta1() habitatv1beta1.HabitatV1beta1Interface
+	BiomeV1beta1() biomev1beta1.BiomeV1beta1Interface
 	// Deprecated: please explicitly pick a version if possible.
-	Habitat() habitatv1beta1.HabitatV1beta1Interface
+	Biome() biomev1beta1.BiomeV1beta1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	habitatV1beta1 *habitatv1beta1.HabitatV1beta1Client
+	biomeV1beta1 *biomev1beta1.BiomeV1beta1Client
 }
 
-// HabitatV1beta1 retrieves the HabitatV1beta1Client
-func (c *Clientset) HabitatV1beta1() habitatv1beta1.HabitatV1beta1Interface {
-	return c.habitatV1beta1
+// BiomeV1beta1 retrieves the BiomeV1beta1Client
+func (c *Clientset) BiomeV1beta1() biomev1beta1.BiomeV1beta1Interface {
+	return c.biomeV1beta1
 }
 
-// Deprecated: Habitat retrieves the default version of HabitatClient.
+// Deprecated: Biome retrieves the default version of BiomeClient.
 // Please explicitly pick a version.
-func (c *Clientset) Habitat() habitatv1beta1.HabitatV1beta1Interface {
-	return c.habitatV1beta1
+func (c *Clientset) Biome() biomev1beta1.BiomeV1beta1Interface {
+	return c.biomeV1beta1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -64,7 +64,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.habitatV1beta1, err = habitatv1beta1.NewForConfig(&configShallowCopy)
+	cs.biomeV1beta1, err = biomev1beta1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.habitatV1beta1 = habitatv1beta1.NewForConfigOrDie(c)
+	cs.biomeV1beta1 = biomev1beta1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -89,7 +89,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.habitatV1beta1 = habitatv1beta1.New(c)
+	cs.biomeV1beta1 = biomev1beta1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

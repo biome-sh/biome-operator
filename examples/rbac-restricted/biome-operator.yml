@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: biome-operator
+  namespace: biome-operator
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: biome-operator
+    spec:
+      containers:
+      - name: biome-operator
+        image: biomesh/biome-operator:v0.8.1
+        env:
+        - name: OPERATOR_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        args: ["--assume-crd-registered", "--namespace", "$(OPERATOR_NAMESPACE)"]
+      serviceAccountName: biome-operator

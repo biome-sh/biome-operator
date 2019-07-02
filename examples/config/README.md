@@ -1,9 +1,9 @@
 # User configuration
 
 This examples demonstrates how to leverage the `user.toml` configuration
-mechanism for Habitat Services within the operator.
+mechanism for Biome Services within the operator.
 
-When a `user.toml` file is located at `/hab/user/$servicename/config/`, it is
+When a `user.toml` file is located at `/bio/user/$servicename/config/`, it is
 automatically loaded by the supervisor. We leverage Kubernetes Secrets to mount
 a file in that path.
 
@@ -11,14 +11,14 @@ NOTE: Adding secret configuration to the `default.toml` is discouraged, as it wi
 
 ## Workflow
 
-After the Habitat operator is up and running, execute the following command from the root of this repository:
+After the Biome operator is up and running, execute the following command from the root of this repository:
 
-    kubectl create -f examples/config/habitat.yml
+    kubectl create -f examples/config/biome.yml
 
 This will create a [Kubernetes Secret](https://kubernetes.io/docs/concepts/configuration/secret/) with the configurations and a Redis database.
 
 By default, Redis listens on port 6379, but we change this to 6999 by mounting a
-Secret as a file under `/hab/user/redis/config/user.toml` inside the Pod.
+Secret as a file under `/bio/user/redis/config/user.toml` inside the Pod.
 
 You can see this is the case by accessing the web app on port `30001`. When
 running on minikube, its IP can be retrieved with `minikube ip`.
@@ -42,7 +42,7 @@ service.
 
 ## Deletion
 
-The Habitat operator does not delete the Secret on Habitat deletion, as it is not managed by the Habitat operator.
+The Biome operator does not delete the Secret on Biome deletion, as it is not managed by the Biome operator.
 To manually delete the Secret simply run:
 
     kubectl delete service user-toml-secret

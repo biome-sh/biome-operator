@@ -4,14 +4,14 @@ This example demonstrates how environment variables can be used for initial serv
 
 ## Workflow
 
-After the Habitat operator is up and running, execute the following command from the root of this repository:
+After the Biome operator is up and running, execute the following command from the root of this repository:
 
-    kubectl create -f examples/env-vars/habitat.yml
+    kubectl create -f examples/env-vars/biome.yml
 
 By default, Redis listens on port 6379, but we change this to 6999 by passing
 the `HAB_REDIS` environment variable to the supervisor (the supervisor
 automatically loads environment variables named `HAB_PACKAGENAME`, as explained
-[here](https://www.habitat.sh/docs/using-habitat/#config-updates)).
+[here](https://www.habitat.sh/docs/using-biome/#config-updates)).
 
 When you inspect the logs of the pod that was just created (with `kubectl logs
 $podname`) you should see something like:

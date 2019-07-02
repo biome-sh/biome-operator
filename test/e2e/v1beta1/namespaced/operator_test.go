@@ -17,25 +17,25 @@ package namespaced
 import (
 	"testing"
 
-	habv1beta1 "github.com/habitat-sh/habitat-operator/pkg/apis/habitat/v1beta1"
-	utils "github.com/habitat-sh/habitat-operator/test/e2e/v1beta1/framework"
+	habv1beta1 "github.com/biome-sh/biome-operator/pkg/apis/biome/v1beta1"
+	utils "github.com/biome-sh/biome-operator/test/e2e/v1beta1/framework"
 
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestNamespacedStandalone(t *testing.T) {
-	// Create the habitat operator
-	h, err := utils.ConvertHabitat("resources/standalone/habitat.yml")
+	// Create the biome operator
+	h, err := utils.ConvertBiome("resources/standalone/biome.yml")
 	if err != nil {
-		t.Fatal(errors.Wrap(err, "convert Habitat from yml file failed"))
+		t.Fatal(errors.Wrap(err, "convert Biome from yml file failed"))
 	}
 	h.Namespace = framework.Namespace
-	if err := framework.CreateHabitat(h); err != nil {
+	if err := framework.CreateBiome(h); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := framework.WaitForResources(habv1beta1.HabitatNameLabel, h.Name, 1); err != nil {
+	if err := framework.WaitForResources(habv1beta1.BiomeNameLabel, h.Name, 1); err != nil {
 		t.Fatal(errors.Wrap(err, "wait for Resorces failed"))
 	}
 
