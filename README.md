@@ -1,3 +1,31 @@
+# Overview
+
+This repo is community distro of Chef Habitat Application Automation.
+
+It was generated from original using small tool [ForkMan](https://github.com/jsirex/forkman).
+
+## Backporting changes
+
+There is `patch-project.sh` example. It reworks project and updates branch `forkman-raw`. It tracks upstream changes.
+
+Here is how can you proceed:
+
+1. Clone this project
+1. Add `habitat` repo as remote: `git remote add habitat https://github.com/habitat-sh/habitat-operator.git`
+1. Fetch latest changes: `git fetch habitat master`
+1. Make sure you have local branch up to date with `origin/forkman-raw`. Script will use it as base for new changes.
+1. Use `patch-project.sh` script with `habitat-sh/habitat.yml` config to refactor original repo:
+``` shell
+./patch-project.sh habitat-sh/habitat.yaml ../biome-operator habitat/master`
+```
+1. Do not try to modify this branch, because new `forkman` run override your change with dictionary. Keep branch clean
+1. Push back `forkman-raw` branch (or create PR)
+1. If after `forkman` project requires additional manual fixes create another temporary branch from `master`, merge there `forkman-raw` and add patches after. It will presrve your changes later
+
+It is highly recommended to not change code by hand because it requires effort for further support. If it possible to patch with `forkman` - use forkman
+
+# Upstream README
+
 [![Build Status](https://circleci.com/gh/habitat-sh/habitat-operator.svg?style=svg)](https://circleci.com/gh/habitat-sh/habitat-operator)
 [![Go Report Card](https://goreportcard.com/badge/github.com/habitat-sh/habitat-operator)](https://goreportcard.com/report/github.com/habitat-sh/habitat-operator)
 
